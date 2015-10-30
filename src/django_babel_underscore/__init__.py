@@ -55,9 +55,10 @@ def extract(fileobj, keywords, comment_tags, options):
 
             stream = TokenStream.from_tuple_iter(tokenize(line, underscore.rules))
             while not stream.eof:
-                if stream.current.type == 'gettext_begin':
+                if stream.current.type == 'gettext_begin' and stream.current.value != 'interpolate(':
                     stream.expect('gettext_begin')
                     funcname = stream.expect('func_name').value
+                    argtype = stream.current.type
                     args, kwargs = parse_arguments(stream, 'gettext_end')
 
                     strings = []
@@ -79,6 +80,8 @@ def extract(fileobj, keywords, comment_tags, options):
                     else:
                         strings = tuple(strings)
 
-                    yield lineno, funcname, strings, []
+                    # Only returns when the first argument is a true string literal
+                    if argtype == 'func_string_arg':
+                        yield lineno, funcname, strings, []
 
                 stream.next()
